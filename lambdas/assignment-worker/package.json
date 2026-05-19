@@ -1,0 +1,10 @@
+{
+  "name": "assignment-worker",
+  "version": "1.0.0",
+  "description": "Worker Lambda that drains SQS and writes to Audit_Log + CloudWatch",
+  "main": "index.js",
+  "dependencies": {
+    "aws-sdk": "^2.1692.0",
+    "uuid": "^9.0.0"
+  }
+}
