@@ -13,9 +13,10 @@ phases:
       - cd frontend && npm run build && cd ..
       - mkdir -p backend/public
       - cp -r frontend/dist/* backend/public/
+      - cp Procfile .
 artifacts:
   files:
     - 'backend/**/*'
-    - 'backend/Procfile'
+    - 'Procfile'
   exclude-paths:
     - '**/node_modules'
