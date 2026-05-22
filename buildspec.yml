@@ -16,6 +16,6 @@ phases:
 artifacts:
   files:
     - 'backend/**/*'
-    - 'Procfile'
+    - 'backend/Procfile'
   exclude-paths:
     - '**/node_modules'
