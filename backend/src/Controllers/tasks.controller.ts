@@ -34,7 +34,11 @@ export class TasksController {
   ) {
     return this.tasksService.updateTask(id, dto, user);
   }
-
+    @Get(':id/image-url')
+    async getImageUrl(@Param('id') id: string, @CurrentUser() user: any) {
+        const url = await this.tasksService.generateViewUrl(id, user);
+        return { url };
+    }
   @Delete(':id')
   async remove(@Param('id') id: string, @CurrentUser() user: any) {
     return this.tasksService.deleteTask(id, user);

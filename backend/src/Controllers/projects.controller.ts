@@ -22,8 +22,8 @@ export class ProjectsController {
     }
 
     @Get(':id')
-    async findOne(@Param('id') id: string) {
-        return this.projectsService.getProjectById(id);
+    async findOne(@Param('id') id: string, @CurrentUser() user: any) {
+        return this.projectsService.getProjectById(id, user);
     }
 
     @Put(':id')

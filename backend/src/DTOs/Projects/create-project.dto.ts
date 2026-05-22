@@ -1,4 +1,4 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsArray, IsOptional } from 'class-validator';
 
 export class CreateProjectDto {
     @IsString()
@@ -7,6 +7,8 @@ export class CreateProjectDto {
     @IsString()
     description: string;
 
-    @IsString()
-    team_id: string;   // team this project belongs to
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
+    teams?: string[];
 }

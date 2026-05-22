@@ -1,0 +1,10 @@
+{
+  "name": "image-resize-lambda",
+  "version": "1.0.0",
+  "description": "Resizes images for Mini Jira",
+  "main": "index.js",
+  "dependencies": {
+    "aws-sdk": "^2.1692.0",
+    "sharp": "^0.33.0"
+  }
+}

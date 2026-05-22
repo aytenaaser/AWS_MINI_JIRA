@@ -15,6 +15,7 @@ export class ProjectsService {
             project_id: uuidv4(),
             name: dto.name,
             description: dto.description,
+            teams: dto.teams || [],
             created_by: creatorUserId,
             created_at: new Date().toISOString(),
         };
@@ -22,16 +23,38 @@ export class ProjectsService {
         return project;
     }
 
+    private normaliseTeams(project: any): string[] {
+        if (!project || !project.teams) return [];
+        if (Array.isArray(project.teams)) return project.teams;
+        // DynamoDB returns a Set – convert to array
+        return Array.from(project.teams.values());
+    }
+
     async getProjects(user: any) {
-        // All authenticated users (both manager and employee) can see every project.
-        // Team isolation only applies to tasks, not projects.
-        return this.dynamoDBService.scan(this.tableName);
+        if (user.role === 'Manager') {
+            return this.dynamoDBService.scan(this.tableName);
+        }
+        const allProjects = await this.dynamoDBService.scan(this.tableName);
+        if (!allProjects) return [];
+
+        return allProjects.filter((project: any) => {
+            const teams = this.normaliseTeams(project);
+            return teams.includes(user.teamId);
+        });
     }
 
-    async getProjectById(projectId: string) {
-        return this.dynamoDBService.get(this.tableName, { project_id: projectId });
-    }
+    async getProjectById(projectId: string, user?: any) {
+        const project = await this.dynamoDBService.get(this.tableName, { project_id: projectId });
+        if (!project) return null;
 
+        if (user && user.role !== 'Manager') {
+            const teams = this.normaliseTeams(project);
+            if (!teams.includes(user.teamId)) {
+                throw new ForbiddenException('Access denied');
+            }
+        }
+        return project;
+    }
     async updateProject(projectId: string, dto: UpdateProjectDto, user: any) {
         if (user.role !== 'Manager') {
             throw new ForbiddenException('Only managers can update projects');

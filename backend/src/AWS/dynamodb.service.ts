@@ -48,12 +48,14 @@ export class DynamoDBService {
         key: any,
         updateExpression: string,
         expressionAttributeValues: any,
+        expressionAttributeNames?: any,   // <-- new optional parameter
     ) {
         return this.client.update({
             TableName: table,
             Key: key,
             UpdateExpression: updateExpression,
             ExpressionAttributeValues: expressionAttributeValues,
+            ExpressionAttributeNames: expressionAttributeNames,   // <-- pass it here
             ReturnValues: 'ALL_NEW',
         }).promise();
     }
@@ -63,11 +65,16 @@ export class DynamoDBService {
     }
 
     async scan(table: string, filterExpression?: string, expressionAttributeValues?: any) {
-        const result = await this.client.scan({
+        const params: AWS.DynamoDB.DocumentClient.ScanInput = {
             TableName: table,
-            FilterExpression: filterExpression,
-            ExpressionAttributeValues: expressionAttributeValues,
-        }).promise();
+        };
+        if (filterExpression) {
+            params.FilterExpression = filterExpression;
+        }
+        if (expressionAttributeValues) {
+            params.ExpressionAttributeValues = expressionAttributeValues;
+        }
+        const result = await this.client.scan(params).promise();
         return result.Items;
     }
 }
