@@ -64,14 +64,24 @@ export class ProjectsService {
 
         let updateExpression = 'SET';
         const expressionAttributeValues: any = {};
+        const expressionAttributeNames: any = {};
         const updates: string[] = [];
+
         for (const key of Object.keys(dto)) {
             if (dto[key] !== undefined) {
-                updates.push(`${key} = :${key}`);
+                // Handle reserved keywords
+                if (key === 'name') {
+                    expressionAttributeNames['#name'] = 'name';
+                    updates.push(`#name = :${key}`);
+                } else {
+                    updates.push(`${key} = :${key}`);
+                }
                 expressionAttributeValues[`:${key}`] = dto[key];
             }
         }
+
         if (updates.length === 0) return project;
+
         updates.push('updated_at = :updated_at');
         expressionAttributeValues[':updated_at'] = new Date().toISOString();
         updateExpression += ' ' + updates.join(', ');
@@ -81,6 +91,7 @@ export class ProjectsService {
             { project_id: projectId },
             updateExpression,
             expressionAttributeValues,
+            Object.keys(expressionAttributeNames).length > 0 ? expressionAttributeNames : undefined,
         );
         return result.Attributes;
     }

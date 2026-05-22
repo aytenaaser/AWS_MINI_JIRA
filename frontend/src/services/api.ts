@@ -143,4 +143,17 @@ export const api = {
         if (!res.ok) throw new Error(await res.text())
         return res.json()
     },
+    updateProject: async (id: string, data: any) => {
+        const token = localStorage.getItem('id_token')
+        const res = await fetch(`${API_URL}/projects/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(data),
+        })
+        if (!res.ok) throw new Error(await res.text())
+        return res.json()
+    },
 }

@@ -23,11 +23,7 @@ export function KanbanBoard({ tasks, users, onSelectTask, onTasksChange, current
             onTasksChange()
         } catch (err: any) {
             const message = err.message || 'Failed to move task'
-            if (message.includes('You can only update your own tasks')) {
-                toaster("You can only update your own tasks", 'error')
-            } else {
-                toaster(message, 'error')
-            }
+            toaster(message, 'error')
         }
     }
 

@@ -27,7 +27,14 @@ export function ProjectsManagement({ user }: { user: { role: string } }) {
     const [showCreate, setShowCreate] = useState(false)
     const [newName, setNewName] = useState('')
     const [newDescription, setNewDescription] = useState('')
-    const [selectedTeams, setSelectedTeams] = useState<string[]>([])
+    const [newTeams, setNewTeams] = useState<string[]>([])
+
+    // Edit state
+    const [editingProject, setEditingProject] = useState<Project | null>(null)
+    const [editName, setEditName] = useState('')
+    const [editDescription, setEditDescription] = useState('')
+    const [editTeams, setEditTeams] = useState<string[]>([])
+    const [saving, setSaving] = useState(false)
 
     const fetchData = async () => {
         try {
@@ -44,6 +51,7 @@ export function ProjectsManagement({ user }: { user: { role: string } }) {
 
     useEffect(() => { fetchData() }, [])
 
+    // Create project
     const handleCreate = async () => {
         if (!newName.trim()) {
             toaster('Project name is required', 'error')
@@ -53,12 +61,12 @@ export function ProjectsManagement({ user }: { user: { role: string } }) {
             await api.createProject({
                 name: newName.trim(),
                 description: newDescription,
-                teams: selectedTeams,
+                teams: newTeams,
             })
             toaster('Project created', 'success')
             setNewName('')
             setNewDescription('')
-            setSelectedTeams([])
+            setNewTeams([])
             setShowCreate(false)
             fetchData()
         } catch (err: any) {
@@ -66,6 +74,38 @@ export function ProjectsManagement({ user }: { user: { role: string } }) {
         }
     }
 
+    // Open edit modal – pre‑fill fields
+    const handleEditClick = (project: Project) => {
+        setEditingProject(project)
+        setEditName(project.name)
+        setEditDescription(project.description || '')
+        setEditTeams(project.teams || [])
+    }
+
+    // Save edited project
+    const handleUpdate = async () => {
+        if (!editingProject || !editName.trim()) {
+            toaster('Project name is required', 'error')
+            return
+        }
+        setSaving(true)
+        try {
+            await api.updateProject(editingProject.project_id, {
+                name: editName.trim(),
+                description: editDescription,
+                teams: editTeams,
+            })
+            toaster('Project updated', 'success')
+            setEditingProject(null)
+            fetchData()
+        } catch (err: any) {
+            toaster(err.message || 'Failed to update project', 'error')
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    // Delete project
     const handleDelete = async (id: string) => {
         if (!confirm('Delete this project?')) return
         try {
@@ -77,17 +117,22 @@ export function ProjectsManagement({ user }: { user: { role: string } }) {
         }
     }
 
-    const toggleTeam = (teamId: string) => {
-        setSelectedTeams(prev =>
-            prev.includes(teamId) ? prev.filter(t => t !== teamId) : [...prev, teamId]
-        )
+    // Toggle team selection for create/edit
+    const toggleCreateTeam = (teamId: string) => {
+        setNewTeams(prev => prev.includes(teamId) ? prev.filter(t => t !== teamId) : [...prev, teamId])
     }
+
+    const toggleEditTeam = (teamId: string) => {
+        setEditTeams(prev => prev.includes(teamId) ? prev.filter(t => t !== teamId) : [...prev, teamId])
+    }
+
+    const isManager = user.role === 'Manager'
 
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold">Projects</h2>
-                {user.role === 'Manager' && (
+                {isManager && (
                     <Button onClick={() => setShowCreate(true)}>Create Project</Button>
                 )}
             </div>
@@ -97,7 +142,7 @@ export function ProjectsManagement({ user }: { user: { role: string } }) {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {projects.map(project => (
-                        <div key={project.project_id} className="bg-white p-4 rounded shadow">
+                        <div key={project.project_id} className="bg-white p-4 rounded shadow relative">
                             <h3 className="font-semibold">{project.name}</h3>
                             <p className="text-sm text-gray-600">{project.description}</p>
                             <div className="mt-2">
@@ -107,19 +152,27 @@ export function ProjectsManagement({ user }: { user: { role: string } }) {
                                         const team = teams.find(t => t.team_id === teamId)
                                         return (
                                             <span key={teamId} className="text-xs bg-blue-100 px-2 py-0.5 rounded mr-1">
-                          {team ? team.name : teamId}
-                        </span>
+                                                {team ? team.name : teamId}
+                                            </span>
                                         )
                                     })
                                     : <span className="text-xs text-gray-400">None</span>}
                             </div>
-                            {user.role === 'Manager' && (
-                                <button
-                                    onClick={() => handleDelete(project.project_id)}
-                                    className="text-red-500 hover:text-red-700 text-xs mt-2"
-                                >
-                                    Delete
-                                </button>
+                            {isManager && (
+                                <div className="absolute top-2 right-2 flex gap-2">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleEditClick(project); }}
+                                        className="text-blue-500 hover:text-blue-700 text-xs"
+                                    >
+                                        Edit
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleDelete(project.project_id); }}
+                                        className="text-red-500 hover:text-red-700 text-xs"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
                             )}
                         </div>
                     ))}
@@ -149,8 +202,8 @@ export function ProjectsManagement({ user }: { user: { role: string } }) {
                                 <label key={team.team_id} className="flex items-center space-x-2 text-sm cursor-pointer">
                                     <input
                                         type="checkbox"
-                                        checked={selectedTeams.includes(team.team_id)}
-                                        onChange={() => toggleTeam(team.team_id)}
+                                        checked={newTeams.includes(team.team_id)}
+                                        onChange={() => toggleCreateTeam(team.team_id)}
                                         className="form-checkbox h-4 w-4 text-blue-600"
                                     />
                                     <span>{team.name}</span>
@@ -160,6 +213,48 @@ export function ProjectsManagement({ user }: { user: { role: string } }) {
                     </div>
 
                     <Button onClick={handleCreate}>Create</Button>
+                </div>
+            </Modal>
+
+            {/* Edit Project Modal */}
+            <Modal open={!!editingProject} onClose={() => setEditingProject(null)}>
+                <div className="space-y-4">
+                    <h3 className="font-semibold">Edit Project</h3>
+                    <Input
+                        placeholder="Project name *"
+                        value={editName}
+                        onChange={e => setEditName(e.target.value)}
+                    />
+                    <Textarea
+                        placeholder="Description"
+                        value={editDescription}
+                        onChange={e => setEditDescription(e.target.value)}
+                    />
+
+                    {/* Team multi‑select */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Assign Teams</label>
+                        <div className="max-h-32 overflow-y-auto border rounded p-2 space-y-1">
+                            {teams.map(team => (
+                                <label key={team.team_id} className="flex items-center space-x-2 text-sm cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={editTeams.includes(team.team_id)}
+                                        onChange={() => toggleEditTeam(team.team_id)}
+                                        className="form-checkbox h-4 w-4 text-blue-600"
+                                    />
+                                    <span>{team.name}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                        <Button onClick={handleUpdate} disabled={saving}>
+                            {saving ? 'Saving…' : 'Save Changes'}
+                        </Button>
+                        <Button variant="outline" onClick={() => setEditingProject(null)}>Cancel</Button>
+                    </div>
                 </div>
             </Modal>
         </div>

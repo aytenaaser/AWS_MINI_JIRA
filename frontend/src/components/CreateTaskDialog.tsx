@@ -67,6 +67,7 @@ export function CreateTaskDialog({ open, onClose, onCreated }: { open: boolean; 
 
             // 2. If an image was selected, upload it and link to the task
             if (imageFile && newTask.task_id) {
+                await new Promise(resolve => setTimeout(resolve, 500));  // small delay for DynamoDB
                 const { uploadUrl, imageKey } = await api.getUploadUrl(newTask.task_id)
                 await fetch(uploadUrl, {
                     method: 'PUT',
@@ -89,7 +90,6 @@ export function CreateTaskDialog({ open, onClose, onCreated }: { open: boolean; 
             setUploading(false)
         }
     }
-
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) setImageFile(file)

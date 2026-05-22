@@ -71,6 +71,20 @@ export class CognitoJwtGuard implements CanActivate {
                 role = roleAttr?.Value || 'Employee';
                 teamId = teamAttr?.Value || null;
                 cognitoFetchSucceeded = true;
+
+                // If the role was missing in Cognito, store it now
+                if (!roleAttr?.Value) {
+                    try {
+                        await this.cognito.adminUpdateUserAttributes({
+                            UserPoolId: this.userPoolId,
+                            Username: sub,
+                            UserAttributes: [{ Name: 'custom:role', Value: 'Employee' }],
+                        }).promise();
+                        console.log(`Stored missing custom:role for user ${sub}`);
+                    } catch (err) {
+                        console.warn('Failed to update Cognito role:', err);
+                    }
+                }
             } catch (err) {
                 console.warn('Could not fetch Cognito attributes, using defaults');
             }

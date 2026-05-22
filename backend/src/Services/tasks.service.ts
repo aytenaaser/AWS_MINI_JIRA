@@ -90,8 +90,9 @@ export class TasksService {
 
         // Permission checks based on role
         if (user.role === 'Employee') {
-            if (task.assignee_id !== user.userId) {
-                throw new ForbiddenException('You can only update your own tasks');
+            // Employee must belong to the same team as the task
+            if (task.team_id !== user.teamId) {
+                throw new ForbiddenException('You can only update tasks in your own team');
             }
             // Employees can update status and attach files (image_key)
             const allowedFields = ['status', 'image_key'];
@@ -226,6 +227,25 @@ export class TasksService {
         if (user.role !== 'Manager') {
             throw new ForbiddenException('Only managers can delete tasks');
         }
+
+        // Delete the attached image (original + resized) from S3
+        if (task.image_key) {
+            try {
+                await this.s3.deleteObject({
+                    Bucket: this.originalsBucket,
+                    Key: task.image_key,
+                }).promise();
+
+                await this.s3.deleteObject({
+                    Bucket: process.env.S3_BUCKET_RESIZED || 'my-minijira-resized-bucket',
+                    Key: task.image_key,   // same key in both buckets
+                }).promise();
+            } catch (err) {
+                console.error('Failed to delete S3 images:', err);
+            }
+        }
+
+        // Delete the task from DynamoDB
         await this.dynamoDBService.delete(this.tableName, { task_id: taskId });
         return { message: 'Task deleted' };
     }
@@ -249,8 +269,8 @@ export class TasksService {
         const uploadUrl = await this.s3.getSignedUrlPromise('putObject', {
             Bucket: this.originalsBucket,
             Key: imageKey,
-            Expires: 900,                      // URL expires in 60 seconds
-            ContentType: 'image/jpeg',        // adjust if needed, or allow other types
+            Expires: 60,                      // URL expires in 60 seconds
+            ContentType: 'image/jpeg',        // restrict to JPEG
         });
 
         return { uploadUrl, imageKey };
@@ -289,7 +309,9 @@ export class TasksService {
                 MessageAttributes: {
                     assignee_id: { DataType: 'String', StringValue: task.assignee_id },
                     team_id: { DataType: 'String', StringValue: task.team_id },
-                    assignee_email: { DataType: 'String', StringValue: assigneeEmail || '' },
+                    ...(assigneeEmail && {
+                        assignee_email: { DataType: 'String', StringValue: assigneeEmail },
+                    }),
                 },
             }).promise();
         } catch (err) {

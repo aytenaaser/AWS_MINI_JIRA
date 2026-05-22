@@ -15,8 +15,12 @@ export class DynamoDBService {
         return this.client.put({ TableName: table, Item: item }).promise();
     }
 
-    async get(table: string, key: any) {
-        const result = await this.client.get({ TableName: table, Key: key }).promise();
+    async get(table: string, key: any, consistentRead = false) {
+        const result = await this.client.get({
+            TableName: table,
+            Key: key,
+            ConsistentRead: consistentRead,
+        }).promise();
         return result.Item;
     }
 

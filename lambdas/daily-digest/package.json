@@ -1,8 +1,9 @@
 {
-  "name": "daily-digest",
+  "name": "daily-digest-v3",
   "version": "1.0.0",
-  "description": "",
+  "description": "Daily digest Lambda using AWS SDK v3",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -10,6 +11,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "aws-sdk": "^2.1693.0"
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/lib-dynamodb": "^3.0.0",
+    "@aws-sdk/client-sns": "^3.0.0"
   }
 }
