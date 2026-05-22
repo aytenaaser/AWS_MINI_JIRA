@@ -46,26 +46,12 @@ export class TeamsService {
         );
         const oldTeamId: string = currentUser?.team_id || null;
 
-        // 2. If the user already belongs to a team AND it’s different from the new one,
-        //    remove them from the old team's members list
-        if (oldTeamId && oldTeamId !== dto.team_id) {
-            const oldTeam = await this.dynamoDBService.get(
-                this.tableName,
-                { team_id: oldTeamId },
-            );
-            if (oldTeam) {
-                const oldMembers = this.normaliseMembers(oldTeam.members);
-                const updatedMembers = oldMembers.filter(m => m !== dto.user_id);
-                await this.dynamoDBService.update(
-                    this.tableName,
-                    { team_id: oldTeamId },
-                    'SET members = :members',
-                    { ':members': updatedMembers },
-                );
-            }
+        // ----- BLOCK REASSIGNMENT -----
+        if (oldTeamId && oldTeamId.trim() !== '') {
+            throw new ForbiddenException('Employee already has a team. You cannot reassign them.');
         }
 
-        // 3. Update the Users table with the new team_id
+        // 2. Update the Users table with the new team_id
         await this.dynamoDBService.update(
             this.usersTable,
             { user_id: dto.user_id },
@@ -73,7 +59,7 @@ export class TeamsService {
             { ':teamId': dto.team_id },
         );
 
-        // 4. Add user to the new team's members list (avoid duplicates)
+        // 3. Add user to the new team's members list (avoid duplicates)
         const newTeam = await this.dynamoDBService.get(
             this.tableName,
             { team_id: dto.team_id },
@@ -91,7 +77,7 @@ export class TeamsService {
             );
         }
 
-        // 5. Update Cognito custom:team_id
+        // 4. Update Cognito custom:team_id
         const cognito = new AWS.CognitoIdentityServiceProvider({
             region: this.cognitoRegion,
         });

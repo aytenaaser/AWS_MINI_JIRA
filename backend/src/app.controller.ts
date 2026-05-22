@@ -13,11 +13,14 @@ export class AppController {
         private readonly AwsService: AwsService,
     ) {}
 
-    @Get()
+    @Get('hello')
     getHello(): string {
-        return this.appService.getHello();
+       return 'Hello World!';
     }
-
+    @Get('health')
+    getHealth(): string {
+        return 'OK';
+    }
     @Public()
     @Get('aws-test')
     async testAwsConnection() {
