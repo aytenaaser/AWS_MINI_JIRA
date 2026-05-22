@@ -1,0 +1,21 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18
+    commands:
+      - cd backend && npm install && cd ..
+      - cd frontend && npm install && cd ..
+  build:
+    commands:
+      - cd backend && npm run build && cd ..
+      - cd frontend && npm run build && cd ..
+      - mkdir -p backend/public
+      - cp -r frontend/dist/* backend/public/
+artifacts:
+  files:
+    - 'backend/**/*'
+    - 'Procfile'
+  exclude-paths:
+    - '**/node_modules'
