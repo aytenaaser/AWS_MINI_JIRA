@@ -11,10 +11,8 @@ exports.handler = async (event) => {
     for (const record of event.Records) {
         try {
             const body = JSON.parse(record.body);
-            // The SQS record contains the SNS notification as a string in body.Message
             const snsMessage = JSON.parse(body.Message);
 
-            // Write to Audit_Log
             const logItem = {
                 log_id: uuidv4(),
                 task_id: snsMessage.task_id,
@@ -25,7 +23,6 @@ exports.handler = async (event) => {
             };
             await dynamo.put({ TableName: AUDIT_TABLE, Item: logItem }).promise();
 
-            // Publish custom CloudWatch metric
             await cloudwatch.putMetricData({
                 Namespace: CLOUDWATCH_NAMESPACE,
                 MetricData: [{
